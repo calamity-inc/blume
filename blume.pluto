@@ -14,8 +14,25 @@ end
 local heap = 0x0C
 local data_sections = ""
 
+-- implement str.ptr mnemonic
+code = (code:gsub([[%(?str%.ptr%s+"(.-)"%)?]], function(match)
+    local parsed_match = match:gsub("\\n", "\n"):gsub("\\r", "\r"):gsub("\\t", "\t")
+    local len = string.len(parsed_match)
+    local ptr = heap
+    heap += len + 1
+    data_sections ..= "\n\t(data (i32.const "..ptr..") \""..match.."\")"
+    return "(i32.const "..ptr..")"
+end))
+
+-- implement str.len mnemonic
+code = (code:gsub([[%(?str%.len%s+"(.-)"%)?]], function(match)
+    local parsed_match = match:gsub("\\n", "\n"):gsub("\\r", "\r"):gsub("\\t", "\t")
+    local len = string.len(parsed_match)
+    return "(i32.const "..len..")"
+end))
+
 -- implement str.ptrandlen mnemonic
-code = (code:gsub([[%(?str%.ptrandlen%s+"(.+)"%)?]], function(match)
+code = (code:gsub([[%(?str%.ptrandlen%s+"(.-)"%)?]], function(match)
     local parsed_match = match:gsub("\\n", "\n"):gsub("\\r", "\r"):gsub("\\t", "\t")
     local len = string.len(parsed_match)
     local ptr = heap

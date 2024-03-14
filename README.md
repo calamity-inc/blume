@@ -15,6 +15,8 @@ A preprocessor for WAT (WebAssembly text format).
 ## Documentation
 
 ### Mnemonics
+- `str.ptr`: `(str) -> (i32)`
+- `str.len`: `(str) -> (i32)`
 - `str.ptrandlen`: `(str) -> (i32, i32)`
 
 ### Functions
