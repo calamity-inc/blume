@@ -22,4 +22,8 @@ A preprocessor for WAT (WebAssembly text format).
 ### Functions
 ```wat
 (func $write_to_stdout (param $str i32) (param $len i32) (result i32))
+
+(func $blume.strlen (param $0 i32) (result i32)
+(func $blume.streq (param $0 i32) (param $1 i32) (result i32) ;; returns 1 if equal
+(func $blume.strstr (param $haystack i32) (param $needle i32) (result i32) ;; returns a pointer relative to haystack if needle is found, 0 otherwise
 ```
