@@ -1,0 +1,2 @@
+*.blume linguist-language=WebAssembly
+*.pluto linguist-language=Lua

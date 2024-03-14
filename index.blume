@@ -1,0 +1,7 @@
+(module
+    (func (export "_start") ;; WASI entrypoint
+        (call $write_to_stdout
+            (str.ptrandlen "Hello, world!\n")
+            )
+        )
+    )

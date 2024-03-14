@@ -1,0 +1,69 @@
+local file = arg[1] or "index.blume"
+local code = io.contents(file)
+if not code then
+    local err = "Failed to load "..file
+    if not arg[1] then
+        err ..= "\nNote: No argument was given, so index.blume was assumed."
+    end
+    print(err)
+    os.exit(1)
+end
+
+-- 0x00 iov struct
+-- 0x08 nwritten
+local heap = 0x0C
+local data_sections = ""
+
+-- implement str.ptrandlen mnemonic
+code = (code:gsub([[%(?str%.ptrandlen%s+"(.+)"%)?]], function(match)
+    local parsed_match = match:gsub("\\n", "\n"):gsub("\\r", "\r"):gsub("\\t", "\t")
+    local len = string.len(parsed_match)
+    local ptr = heap
+    heap += len + 1
+    data_sections ..= "\n\t(data (i32.const "..ptr..") \""..match.."\")"
+    return "(i32.const "..ptr..") (i32.const "..len..")"
+end))
+
+-- implement write_to_stdout function
+if code:find("$write_to_stdout", 1, true) then
+code = code:gsub("%(module", [[(module
+    (func $write_to_stdout (param $str i32) (param $len i32)
+        (i32.store
+            (i32.const 0) ;; iov.iov_base
+            (local.get $str)
+            )
+        (i32.store
+            (i32.const 4) ;; iov.iov_len
+            (local.get $len)
+            )
+        (drop
+            (call $wasi_snapshot_preview1.fd_write
+                (i32.const 1) ;; stdout
+                (i32.const 0) ;; iovs
+                (i32.const 1) ;; iovs_len
+                (i32.const 0) ;; out_nwritten
+                )
+            )
+        )]])
+end
+
+-- emit memory
+if data_sections ~= "" then
+if code:find("$wasi_snapshot_preview1.", 1, true) then
+code = code:gsub("%(module", [[(module
+    (memory (export "memory") 1) ;; needs to be exported for WASI]]..data_sections)
+else
+code = code:gsub("%(module", [[(module
+    (memory 1)]]..data_sections)
+end
+end
+
+-- emit imports
+if code:find("$wasi_snapshot_preview1.fd_write", 1, true) then
+code = code:gsub("%(module", [[(module
+    (import "wasi_snapshot_preview1" "fd_write" (func $wasi_snapshot_preview1.fd_write (param i32 i32 i32 i32) (result i32)))]])
+end
+
+io.contents(file..".wat", code)
+print("Generated "..file..".wat")
+print("To convert it to WASM, run: wat2wasm "..file..".wat")
